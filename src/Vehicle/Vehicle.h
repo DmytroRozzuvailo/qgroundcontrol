@@ -1052,6 +1052,7 @@ private:
 #if !defined(NO_ARDUPILOT_DIALECT)
     void _handleCameraFeedback          (const mavlink_message_t& message);
 #endif
+    void _handleTargetArea              (const mavlink_message_t& message);
     void _handleCameraImageCaptured     (const mavlink_message_t& message);
     void _handleADSBVehicle             (const mavlink_message_t& message);
     void _missionManagerError           (int errorCode, const QString& errorMsg);
