@@ -16,6 +16,7 @@
 #include <QTime>
 #include <QUrl>
 
+#include "MAVLinkProtocol.h"
 #include "QGCMAVLink.h"
 #include "QGCLoggingCategory.h"
 #include "VideoReceiver.h"
@@ -27,6 +28,13 @@ Q_DECLARE_LOGGING_CATEGORY(VideoManagerLog)
 class VideoSettings;
 class Vehicle;
 class Joystick;
+
+enum class LMTargetAction {
+    LM_TARGET_UNUSED=0,
+    LM_TARGET_LOCK,
+    LM_TARGET_FOLLOW,
+    LM_TARGET_CANCEL,
+};
 
 class VideoManager : public QGCTool
 {
@@ -107,6 +115,8 @@ public:
 
 
     Q_INVOKABLE void sendTarget     (double x, double y, double width, double height, double maxX, double maxY);
+    Q_INVOKABLE void followTarget   ();
+    Q_INVOKABLE void cancelFollow   ();
 
     Q_INVOKABLE void startVideo     ();
     Q_INVOKABLE void stopVideo      ();
@@ -132,6 +142,7 @@ signals:
     void recordingChanged           ();
     void recordingStarted           ();
     void videoSizeChanged           ();
+    void targetAreaReceived         (double x, double y, double width, double height);
 
 protected slots:
     void _videoSourceChanged        ();
@@ -143,6 +154,7 @@ protected slots:
     void _setActiveVehicle          (Vehicle* vehicle);
     void _aspectRatioChanged        ();
     void _communicationLostChanged  (bool communicationLost);
+    void _receiveMessage            (LinkInterface* link, mavlink_message_t message);
 
 protected:
     friend class FinishVideoInitialization;
@@ -155,6 +167,9 @@ protected:
     void _restartVideo              (unsigned id);
     void _startReceiver             (unsigned id);
     void _stopReceiver              (unsigned id);
+    void _sendTargetViaMavlink      (double x, double y, double width, double height, double maxX, double maxY);
+    void _sendFollowTargetViaMavlink();
+    void _sendFollowCancelViaMavlink();
 
 protected:
     QString                 _videoFile;

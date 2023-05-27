@@ -102,8 +102,10 @@ VideoManager::setToolbox(QGCToolbox *toolbox)
    connect(_videoSettings->tcpUrl(),        &Fact::rawValueChanged, this, &VideoManager::_tcpUrlChanged);
    connect(_videoSettings->aspectRatio(),   &Fact::rawValueChanged, this, &VideoManager::_aspectRatioChanged);
    connect(_videoSettings->lowLatencyMode(),&Fact::rawValueChanged, this, &VideoManager::_lowLatencyModeChanged);
-   MultiVehicleManager *pVehicleMgr = qgcApp()->toolbox()->multiVehicleManager();
+   MultiVehicleManager *pVehicleMgr = toolbox->multiVehicleManager();
    connect(pVehicleMgr, &MultiVehicleManager::activeVehicleChanged, this, &VideoManager::_setActiveVehicle);
+   MAVLinkProtocol* mavlinkProtocol = toolbox->mavlinkProtocol();
+   connect(mavlinkProtocol, &MAVLinkProtocol::messageReceived, this, &VideoManager::_receiveMessage);
 
 #if defined(QGC_GST_STREAMING)
     GStreamer::blacklist(static_cast<VideoSettings::VideoDecoderOptions>(_videoSettings->forceVideoDecoder()->rawValue().toInt()));
@@ -289,6 +291,28 @@ VideoManager::stopVideo()
     _stopReceiver(0);
 }
 
+/// Called when a new mavlink message for out vehicle is received
+void VideoManager::_receiveMessage(LinkInterface*, mavlink_message_t message)
+{
+    switch (message.msgid) {
+    case MAVLINK_MSG_ID_COMMAND_LONG:
+        mavlink_command_long_t packet;
+        mavlink_msg_command_long_decode(&message, &packet);
+
+        if (packet.command == MAV_CMD_USER_1) {
+            qCDebug(VideoManagerLog) << "Receive Target Area";
+            qCDebug(VideoManagerLog) << "x: " << packet.param1;
+            qCDebug(VideoManagerLog) << "y: " << packet.param2;
+            qCDebug(VideoManagerLog) << "width: " << packet.param3;
+            qCDebug(VideoManagerLog) << "height: " << packet.param4;
+            qCDebug(VideoManagerLog) << "maxX: " << packet.param5;
+            qCDebug(VideoManagerLog) << "maxY: " << packet.param6;
+
+            emit targetAreaReceived(packet.param2, packet.param3, packet.param4, packet.param5);
+        }
+        break;
+    }
+}
 
 void
 VideoManager::sendTarget(double x, double y, double width, double height, double maxX, double maxY)
@@ -305,7 +329,88 @@ VideoManager::sendTarget(double x, double y, double width, double height, double
     qCDebug(VideoManagerLog) << "maxX: " << maxX;
     qCDebug(VideoManagerLog) << "maxY: " << maxY;
 
-    qgcApp()->showAppMessage(QString("Target ROI: x=%1 y=%2 w=%3 h=%4").arg(x).arg(y).arg(width).arg(height));
+    qgcApp()->showAppMessage(tr("Target ROI: x=%1 y=%2 w=%3 h=%4").arg(x).arg(y).arg(width).arg(height));
+    _sendTargetViaMavlink(x, y, width, height, maxX, maxY);
+}
+
+void
+VideoManager::_sendTargetViaMavlink(double x, double y, double width, double height, double maxX, double maxY)
+{
+    if (!_activeVehicle) {
+        qCWarning(VideoManagerLog) << "Active Vehicle is not defined";
+        qgcApp()->showAppMessage(tr("Active Vehicle is not defined"));
+        return;
+    }
+
+    _activeVehicle->sendCommand(
+        MAV_COMP_ID_ONBOARD_COMPUTER,  // Target component (Companion Computer)
+        MAV_CMD_USER_1,                // Command id
+        false,
+        static_cast<int>(LMTargetAction::LM_TARGET_LOCK),
+        x,
+        y,
+        width,
+        height,
+        maxX,
+        maxY);
+    qCDebug(VideoManagerLog) << "Sent Target message via MavLink";
+}
+
+void
+VideoManager::followTarget()
+{
+    if (qgcApp()->runningUnitTests()) {
+        return;
+    }
+
+    qgcApp()->showAppMessage(tr("Follow Target"));
+    _sendFollowTargetViaMavlink();
+}
+
+void
+VideoManager::_sendFollowTargetViaMavlink()
+{
+    if (!_activeVehicle) {
+        qCWarning(VideoManagerLog) << "Active Vehicle is not defined";
+        qgcApp()->showAppMessage(tr("Active Vehicle is not defined"));
+        return;
+    }
+
+    _activeVehicle->sendCommand(
+        MAV_COMP_ID_ONBOARD_COMPUTER,  // Target component (Companion Computer)
+        MAV_CMD_USER_1,                // Command id
+        false,
+        static_cast<int>(LMTargetAction::LM_TARGET_FOLLOW));                           //
+    qCDebug(VideoManagerLog) << "Sent Follow Target message via MavLink";
+}
+
+void
+VideoManager::cancelFollow()
+{
+    if (qgcApp()->runningUnitTests()) {
+        return;
+    }
+
+    qgcApp()->showAppMessage(tr("Cancel Follow"));
+    _sendFollowCancelViaMavlink();
+}
+
+
+void
+VideoManager::_sendFollowCancelViaMavlink()
+{
+    if (!_activeVehicle) {
+        qCWarning(VideoManagerLog) << "Active Vehicle is not defined";
+        qgcApp()->showAppMessage(tr("Active Vehicle is not defined"));
+        return;
+    }
+
+    _activeVehicle->sendCommand(
+        MAV_COMP_ID_ONBOARD_COMPUTER,  // Target component (Companion Computer)
+        MAV_CMD_USER_1,                // Command id
+        false,
+        static_cast<int>(LMTargetAction::LM_TARGET_CANCEL));
+    qCDebug(VideoManagerLog) << "Sent Follow Cancel message via MavLink";
 }
 
 void
