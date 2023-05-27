@@ -289,6 +289,25 @@ VideoManager::stopVideo()
     _stopReceiver(0);
 }
 
+
+void
+VideoManager::sendTarget(double x, double y, double width, double height, double maxX, double maxY)
+{
+    if (qgcApp()->runningUnitTests()) {
+        return;
+    }
+
+    qCDebug(VideoManagerLog) << "Send Target";
+    qCDebug(VideoManagerLog) << "x: " << x;
+    qCDebug(VideoManagerLog) << "y: " << y;
+    qCDebug(VideoManagerLog) << "width: " << width;
+    qCDebug(VideoManagerLog) << "height: " << height;
+    qCDebug(VideoManagerLog) << "maxX: " << maxX;
+    qCDebug(VideoManagerLog) << "maxY: " << maxY;
+
+    qgcApp()->showAppMessage(QString("Target ROI: x=%1 y=%2 w=%3 h=%4").arg(x).arg(y).arg(width).arg(height));
+}
+
 void
 VideoManager::startRecording(const QString& videoFile)
 {
