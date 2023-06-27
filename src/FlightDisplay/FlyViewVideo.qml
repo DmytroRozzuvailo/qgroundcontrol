@@ -201,6 +201,11 @@ Item {
                 console.log('Follow Target');
                 QGroundControl.videoManager.followTarget();
                 flyViewVideoMouseArea.isFollowed = true;
+
+                if (highlightItem != null) {
+                    // if there is already a selection, delete it
+                    highlightItem.destroy();
+                }
             }
         }
     }
