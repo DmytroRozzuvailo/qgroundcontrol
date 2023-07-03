@@ -123,14 +123,18 @@ Item {
 
             if (mouseX - startX < 0 ) {
                 highlightItem.x = mouseX;
+            } else {
+                highlightItem.x = startX;
             }
 
             if (mouseY - startY < 0) {
                 highlightItem.y = mouseY;
+            } else {
+                highlightItem.y = startY;
             }
 
-            highlightItem.width = (Math.abs (mouseX - startX));
-            highlightItem.height = (Math.abs (mouseY - startY));
+            highlightItem.width = Math.abs(mouseX - startX);
+            highlightItem.height = Math.abs(mouseY - startY);
         }
         onReleased: {
             isPressed = false;
@@ -139,11 +143,13 @@ Item {
             }
 
             console.log('Send Target region to Drone');
-            console.log('x = ' + startX);
-            console.log('y = ' + startY);
+            console.log('x = ' + highlightItem.x);
+            console.log('y = ' + highlightItem.y);
             console.log('width = ' + highlightItem.width);
             console.log('height = ' + highlightItem.height);
-            QGroundControl.videoManager.sendTarget(startX, startY, highlightItem.width, highlightItem.height, parent.width, parent.height);
+            console.log('maxWidth = ' + highlightItem.width);
+            console.log('maxHeight = ' + highlightItem.height);
+            QGroundControl.videoManager.sendTarget(highlightItem.x, highlightItem.y, highlightItem.width, highlightItem.height, parent.width, parent.height);
         }
         Component {
             id: highlightComponent;

@@ -300,15 +300,48 @@ void VideoManager::_receiveMessage(LinkInterface*, mavlink_message_t message)
         mavlink_msg_command_long_decode(&message, &packet);
 
         if (packet.command == MAV_CMD_USER_1) {
+            auto x = packet.param1;
+            auto y = packet.param2;
+            auto width = packet.param3;
+            auto height = packet.param4;
+            auto maxX = packet.param5;
+            auto maxY = packet.param6;
             qCDebug(VideoManagerLog) << "Receive Target Area";
-            qCDebug(VideoManagerLog) << "x: " << packet.param1;
-            qCDebug(VideoManagerLog) << "y: " << packet.param2;
-            qCDebug(VideoManagerLog) << "width: " << packet.param3;
-            qCDebug(VideoManagerLog) << "height: " << packet.param4;
-            qCDebug(VideoManagerLog) << "maxX: " << packet.param5;
-            qCDebug(VideoManagerLog) << "maxY: " << packet.param6;
+            qCDebug(VideoManagerLog) << "x: " << x;
+            qCDebug(VideoManagerLog) << "y: " << y;
+            qCDebug(VideoManagerLog) << "width: " << width;
+            qCDebug(VideoManagerLog) << "height: " << height;
+            qCDebug(VideoManagerLog) << "maxX: " << maxX;
+            qCDebug(VideoManagerLog) << "maxY: " << maxY;
 
-            emit targetAreaReceived(packet.param2, packet.param3, packet.param4, packet.param5);
+            auto videoWidth = getWidth(maxX, maxY);
+            auto videoHeight = getHeight(maxX, maxY);
+            auto ratio = (double)videoSize().width() / (double)videoSize().height();
+            if (videoHeight > 0.0) {
+                videoWidth = videoHeight * ratio;
+            }
+
+            qCDebug(VideoManagerLog) << "Video resolution width: " << videoWidth;
+            qCDebug(VideoManagerLog) << "Video resolution height: " << videoHeight;
+
+            if (videoWidth != 0.0 && videoHeight != 0.0) {
+                auto borderWidthLeft = videoWidth <= maxX ? (maxX - videoWidth) / 2.0 : 0;
+                auto borderWidthRight = videoWidth <= maxX ? maxX - borderWidthLeft: maxX;
+                auto borderHeightTop = videoHeight <= maxY ? (maxY - videoHeight) / 2.0: 0;
+                auto borderHeightBottom = videoHeight <= maxY ? maxY - borderHeightTop: maxY;
+
+                if (x < borderWidthLeft || x > borderWidthRight || x + width > borderWidthRight || y < borderHeightTop || y > borderHeightBottom || y + height > borderHeightBottom) {
+                    qgcApp()->showAppMessage(tr("Target ROI is not in Video Area: x=%1 y=%2 w=%3 h=%4").arg(x).arg(y).arg(width).arg(height));
+                    qCDebug(VideoManagerLog) << tr("Target ROI is not in Video Area: x=%1 y=%2 w=%3 h=%4").arg(x).arg(y).arg(width).arg(height);
+                    return;
+                } else {
+                    // move coordinates inside of VideoView content block
+                    x = x + borderWidthLeft;
+                    y = y + borderHeightTop;
+
+                    emit targetAreaReceived(x, y, width, height);
+                }
+            }
         }
         break;
     }
@@ -328,6 +361,33 @@ VideoManager::sendTarget(double x, double y, double width, double height, double
     qCDebug(VideoManagerLog) << "height: " << height;
     qCDebug(VideoManagerLog) << "maxX: " << maxX;
     qCDebug(VideoManagerLog) << "maxY: " << maxY;
+
+    auto videoWidth = getWidth(maxX, maxY);
+    auto videoHeight = getHeight(maxX, maxY);
+    auto ratio = (double)videoSize().width() / (double)videoSize().height();
+    if (videoHeight > 0.0) {
+        videoWidth = videoHeight * ratio;
+    }
+
+    qCDebug(VideoManagerLog) << "Video resolution width: " << videoWidth;
+    qCDebug(VideoManagerLog) << "Video resolution height: " << videoHeight;
+
+    if (videoWidth != 0.0 && videoHeight != 0.0) {
+        auto borderWidthLeft = videoWidth <= maxX ? (maxX - videoWidth) / 2.0 : 0;
+        auto borderWidthRight = videoWidth <= maxX ? maxX - borderWidthLeft: maxX;
+        auto borderHeightTop = videoHeight <= maxY ? (maxY - videoHeight) / 2.0: 0;
+        auto borderHeightBottom = videoHeight <= maxY ? maxY - borderHeightTop: maxY;
+
+        if (x < borderWidthLeft || x > borderWidthRight || x + width > borderWidthRight || y < borderHeightTop || y > borderHeightBottom || y + height > borderHeightBottom) {
+            qgcApp()->showAppMessage(tr("Target ROI is not in Video Area: x=%1 y=%2 w=%3 h=%4").arg(x).arg(y).arg(width).arg(height));
+            qCDebug(VideoManagerLog) << tr("Target ROI is not in Video Area: x=%1 y=%2 w=%3 h=%4").arg(x).arg(y).arg(width).arg(height);
+            return;
+        } else {
+            // move coordinates inside of Video content block
+            x = x - borderWidthLeft;
+            y = y - borderHeightTop;
+        }
+    }
 
     qgcApp()->showAppMessage(tr("Target ROI: x=%1 y=%2 w=%3 h=%4").arg(x).arg(y).arg(width).arg(height));
     _sendTargetViaMavlink(x, y, width, height, maxX, maxY);
@@ -501,6 +561,26 @@ VideoManager::grabImage(const QString& imageFile)
 #else
     Q_UNUSED(imageFile)
 #endif
+}
+
+double VideoManager::getWidth(int parentWidth, int parentHeight) {
+    //-- Fit Width or Stretch
+    auto fitMode = _videoSettings->videoFit()->rawValue().toUInt();
+    if ((uint16_t)fitMode == 0 || (uint16_t)fitMode == 2) {
+        return parentWidth;
+    }
+    //-- Fit Height
+    return aspectRatio() != 0.0 ? parentHeight * aspectRatio() : parentWidth;
+}
+
+double VideoManager::getHeight(int parentWidth, int parentHeight) {
+    //-- Fit Height or Stretch
+    auto fitMode = _videoSettings->videoFit()->rawValue().toUInt();
+    if ((uint16_t)fitMode == 1 || (uint16_t)fitMode == 2) {
+        return parentHeight;
+    }
+    //-- Fit Width
+    return aspectRatio() != 0.0 ? parentWidth * (1 / aspectRatio()) : parentHeight;
 }
 
 //-----------------------------------------------------------------------------
