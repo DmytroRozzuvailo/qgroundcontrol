@@ -79,6 +79,9 @@ public:
     virtual bool        hasThermal          ();
     virtual QString     imageFile           ();
 
+    double              getWidth            (int parentWidth, int parentHeight);
+    double              getHeight           (int parentWidth, int parentHeight);
+
     bool streaming(void) {
         return _streaming;
     }
