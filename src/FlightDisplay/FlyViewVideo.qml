@@ -164,7 +164,7 @@ Item {
         QGCButton {
             id: cancelButton
             visible: pipState.state === pipState.fullState
-            enabled: flyViewVideoMouseArea.isFollowed === true
+            // enabled: flyViewVideoMouseArea.isFollowed === true
             text:           qsTr("Cancel")
             backRadius:     4
             heightFactor:   0.5
@@ -190,7 +190,7 @@ Item {
         QGCButton {
             id: followButton
             visible: pipState.state === pipState.fullState
-            enabled: highlightItem && highlightItem.width !== 0 && highlightItem.height !== 0
+            // enabled: highlightItem && highlightItem.width !== 0 && highlightItem.height !== 0
             text:           qsTr("Follow")
             backRadius:     4
             heightFactor:   0.5

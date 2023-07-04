@@ -389,8 +389,9 @@ VideoManager::sendTarget(double x, double y, double width, double height, double
         }
     }
 
-    qgcApp()->showAppMessage(tr("Target ROI: x=%1 y=%2 w=%3 h=%4").arg(x).arg(y).arg(width).arg(height));
-    _sendTargetViaMavlink(x, y, width, height, maxX, maxY);
+    // qgcApp()->showAppMessage(tr("Target ROI: x=%1 y=%2 w=%3 h=%4").arg(x).arg(y).arg(width).arg(height));
+    // send maxX and maxY as videoWidth, videoHeight
+    _sendTargetViaMavlink(x, y, width, height, videoWidth, videoHeight);
 }
 
 void
@@ -405,7 +406,7 @@ VideoManager::_sendTargetViaMavlink(double x, double y, double width, double hei
     _activeVehicle->sendCommand(
         MAV_COMP_ID_ONBOARD_COMPUTER,  // Target component (Companion Computer)
         MAV_CMD_USER_1,                // Command id
-        false,
+        true,
         static_cast<int>(LMTargetAction::LM_TARGET_LOCK),
         x,
         y,
@@ -423,7 +424,7 @@ VideoManager::followTarget()
         return;
     }
 
-    qgcApp()->showAppMessage(tr("Follow Target"));
+    // qgcApp()->showAppMessage(tr("Follow Target"));
     _sendFollowTargetViaMavlink();
 }
 
@@ -439,7 +440,7 @@ VideoManager::_sendFollowTargetViaMavlink()
     _activeVehicle->sendCommand(
         MAV_COMP_ID_ONBOARD_COMPUTER,  // Target component (Companion Computer)
         MAV_CMD_USER_1,                // Command id
-        false,
+        true,
         static_cast<int>(LMTargetAction::LM_TARGET_FOLLOW));                           //
     qCDebug(VideoManagerLog) << "Sent Follow Target message via MavLink";
 }
@@ -451,7 +452,7 @@ VideoManager::cancelFollow()
         return;
     }
 
-    qgcApp()->showAppMessage(tr("Cancel Follow"));
+    // qgcApp()->showAppMessage(tr("Cancel Follow"));
     _sendFollowCancelViaMavlink();
 }
 
@@ -468,7 +469,7 @@ VideoManager::_sendFollowCancelViaMavlink()
     _activeVehicle->sendCommand(
         MAV_COMP_ID_ONBOARD_COMPUTER,  // Target component (Companion Computer)
         MAV_CMD_USER_1,                // Command id
-        false,
+        true,
         static_cast<int>(LMTargetAction::LM_TARGET_CANCEL));
     qCDebug(VideoManagerLog) << "Sent Follow Cancel message via MavLink";
 }
