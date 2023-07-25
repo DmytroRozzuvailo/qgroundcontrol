@@ -300,6 +300,7 @@ void InitialConnectStateMachine::_stateRequestParameters(StateMachine* stateMach
     connect(vehicle->_parameterManager, &ParameterManager::loadProgressChanged, connectMachine,
             &InitialConnectStateMachine::gotProgressUpdate);
     vehicle->_parameterManager->refreshAllParameters();
+    vehicle->_parameterManager->refreshAllParameters(MAV_COMP_ID_ONBOARD_COMPUTER);
 }
 
 void InitialConnectStateMachine::_stateRequestMission(StateMachine* stateMachine)
