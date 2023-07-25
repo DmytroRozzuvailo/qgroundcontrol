@@ -63,7 +63,8 @@ const QHash<int, QString> _mavlinkCompIdHash {
     { MAV_COMP_ID_IMU_2,    "IMU2" },
     { MAV_COMP_ID_IMU_3,    "IMU3" },
     { MAV_COMP_ID_GPS,      "GPS1" },
-    { MAV_COMP_ID_GPS2,     "GPS2" }
+    { MAV_COMP_ID_GPS2,     "GPS2" },
+    { MAV_COMP_ID_ONBOARD_COMPUTER, "COMPANION_COMPUTER" }
 };
 
 ParameterManager::ParameterManager(Vehicle* vehicle)
@@ -1239,6 +1240,7 @@ void ParameterManager::_initialRequestTimeout(void)
     if (!_disableAllRetries && ++_initialRequestRetryCount <= _maxInitialRequestListRetry) {
         qCDebug(ParameterManagerLog) << _logVehiclePrefix(-1) << "Retrying initial parameter request list";
         refreshAllParameters();
+        refreshAllParameters(191);
         _initialRequestTimeoutTimer.start();
     } else {
         if (!_vehicle->genericFirmware()) {

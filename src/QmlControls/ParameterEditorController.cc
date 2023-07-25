@@ -342,6 +342,7 @@ bool ParameterEditorController::buildDiffFromFile(const QString& filename)
 void ParameterEditorController::refresh(void)
 {
     _parameterMgr->refreshAllParameters();
+    _parameterMgr->refreshAllParameters(MAV_COMP_ID_ONBOARD_COMPUTER);
 }
 
 void ParameterEditorController::resetAllToDefaults(void)
