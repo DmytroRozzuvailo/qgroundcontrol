@@ -97,6 +97,9 @@ Item {
         onDoubleClicked:    QGroundControl.videoManager.fullScreen = !QGroundControl.videoManager.fullScreen
         property real startX
         property real startY
+        property real sizeOfAreaStep: 32;
+        property real areaMode: 0;
+        property real areaSize: areaMode * sizeOfAreaStep;
         property bool isPressed: false;
         property bool isFollowed: false;
 
@@ -106,58 +109,114 @@ Item {
                 // if there is already a selection, delete it
                 highlightItem.destroy();
             }
+
+            var xMouse = mouseX;
+            var yMouse = mouseY;
+
+            if (areaMode !== 0) {
+                var areaSie = sizeOfAreaStep * areaMode;
+                xMouse = mouseX - areaSize / 2;
+                if (xMouse < 0) {
+                    xMouse = 0;
+                }
+                yMouse = mouseY - areaSize / 2;
+                if (yMouse < 0) {
+                    yMouse = 0;
+                }
+            }
+
             // create a new rectangle at the wanted position
             highlightItem = highlightComponent.createObject (flyViewVideoMouseArea, {
-                "x" : mouseX,
-                "y" : mouseY,
+                "x" : xMouse,
+                "y" : yMouse,
             });
-            startX = mouseX;
-            startY = mouseY;
+
+            if (areaMode != 0) {
+                highlightItem.width = areaSize;
+                highlightItem.height = areaSize;
+                highlightItem.radius = areaSize;
+            } else {
+                startX = mouseX;
+                startY = mouseY;
+            }
         }
         onPositionChanged: (mouse) => {
             if (highlightItem == null || isPressed == false) {
                 return;
             }
 
-            // on move, update the width of rectangle
+            if (areaMode != 0) {
+                var areaSize = sizeOfAreaStep * areaMode;
 
-            if (mouseX - startX < 0 ) {
-                highlightItem.x = mouseX;
+                // on move, update the x and y of rectangle
+                var xMouse = mouseX - areaSize / 2;
+                if (xMouse >= 0) {
+                    highlightItem.x = xMouse;
+                } else {
+                    highlightItem.x = 0;
+                }
+                var yMouse = mouseY - areaSize / 2;
+                if (yMouse >= 0) {
+                    highlightItem.y = yMouse;
+                } else {
+                    highlightItem.y = 0;
+                }
             } else {
-                highlightItem.x = startX;
-            }
+                // on move, update the width of rectangle
 
-            if (mouseY - startY < 0) {
-                highlightItem.y = mouseY;
-            } else {
-                highlightItem.y = startY;
-            }
+                if (mouseX - startX < 0 ) {
+                    highlightItem.x = mouseX;
+                } else {
+                    highlightItem.x = startX;
+                }
 
-            highlightItem.width = Math.abs(mouseX - startX);
-            highlightItem.height = Math.abs(mouseY - startY);
+                if (mouseY - startY < 0) {
+                    highlightItem.y = mouseY;
+                } else {
+                    highlightItem.y = startY;
+                }
+
+                highlightItem.width = Math.abs(mouseX - startX);
+                highlightItem.height = Math.abs(mouseY - startY);
+            }
         }
         onReleased: {
-            isPressed = false;
-            if (highlightItem.width == 0 && highlightItem.height == 0) {
-                return;
+            if (highlightItem != null) {
+                // if there is already a selection, delete it
+                highlightItem.destroy();
             }
 
-            console.log('Send Target region to Drone');
-            console.log('x = ' + highlightItem.x);
-            console.log('y = ' + highlightItem.y);
-            console.log('width = ' + highlightItem.width);
-            console.log('height = ' + highlightItem.height);
-            console.log('maxWidth = ' + highlightItem.width);
-            console.log('maxHeight = ' + highlightItem.height);
-            QGroundControl.videoManager.sendTarget(highlightItem.x, highlightItem.y, highlightItem.width, highlightItem.height, parent.width, parent.height);
+            if (areaMode != 0) {
+                console.log('Send Target Center and Mode to Drone');
+                var xMouse = highlightItem.x + areaSize / 2;
+                var yMouse = highlightItem.y + areaSize / 2;
+
+                console.log('center x = ' + xMouse);
+                console.log('center y = ' + yMouse);
+                console.log('mode = ' + areaMode);
+                QGroundControl.videoManager.sendTargetMode(xMouse, yMouse, areaMode, parent.width, parent.height);
+            } else {
+                if (highlightItem.width == 0 || highlightItem.height == 0) {
+                    return;
+                }
+                console.log('Send Target region to Drone');
+                console.log('x = ' + highlightItem.x);
+                console.log('y = ' + highlightItem.y);
+                console.log('width = ' + highlightItem.width);
+                console.log('height = ' + highlightItem.height);
+                console.log('maxWidth = ' + parent.width);
+                console.log('maxHeight = ' + parent.height);
+                QGroundControl.videoManager.sendTarget(highlightItem.x, highlightItem.y, highlightItem.width, highlightItem.height, parent.width, parent.height);
+
+            }
         }
         Component {
             id: highlightComponent;
 
             Rectangle {
-                color: "#0D0080FF"
-                border.width: 1
-                border.color: "#fff"
+                color: "#A60000FF"
+                border.width: 4
+                border.color: "#00F"
             }
         }
 
@@ -213,6 +272,55 @@ Item {
                     highlightItem.destroy();
                 }
             }
+        }
+        QGCComboBox {
+            id: comboAreaSize
+            visible: pipState.state === pipState.fullState
+            // enabled: flyViewVideoMouseArea.isFollowed === true
+            width:          _buttonWidth
+            anchors{
+                bottom: cancelButton.top
+                right: parent.right
+                rightMargin: 16
+                bottomMargin: 24
+            }
+            model: [qsTr("Manual"), qsTr("Small"), qsTr("Middle"), qsTr("Big")]
+
+            onActivated: {
+                // Hard coded values from qserialport.h
+                switch (index) {
+                case 0:
+                    // manual
+                    flyViewVideoMouseArea.areaMode = 0;
+                    break
+                case 1:
+                    // small square
+                    flyViewVideoMouseArea.areaMode = 1;
+                    break
+                case 2:
+                    // middle square
+                    flyViewVideoMouseArea.areaMode = 2;
+                    break
+                case 3:
+                    // big square
+                    flyViewVideoMouseArea.areaMode = 3;
+                    break
+                }
+            }
+
+            Component.onCompleted: {
+                currentIndex = flyViewVideoMouseArea.areaMode;
+            }
+        }
+        QGCLabel {
+            width: _buttonWidth
+            anchors{
+                bottom: followButton.top
+                right: comboAreaSize.left
+                rightMargin: 16
+                bottomMargin: 24
+            }
+            text: qsTr("Select Area Mode:")
         }
     }
 

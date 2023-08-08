@@ -475,6 +475,73 @@ VideoManager::_sendFollowCancelViaMavlink()
 }
 
 void
+VideoManager::sendTargetMode(double xCenter, double yCenter, int mode, double maxX, double maxY)
+{
+    if (qgcApp()->runningUnitTests()) {
+        return;
+    }
+    // mode: 0 - small, 1 - middle, 2 - big area
+
+    qCDebug(VideoManagerLog) << "Send Target Mode";
+    qCDebug(VideoManagerLog) << "Center x: " << xCenter;
+    qCDebug(VideoManagerLog) << "Center y: " << yCenter;
+    qCDebug(VideoManagerLog) << "mode: " << mode;
+    qCDebug(VideoManagerLog) << "maxX: " << maxX;
+    qCDebug(VideoManagerLog) << "maxY: " << maxY;
+
+    auto videoWidth = getWidth(maxX, maxY);
+    auto videoHeight = getHeight(maxX, maxY);
+    auto ratio = (double)videoSize().width() / (double)videoSize().height();
+    if (videoHeight > 0.0) {
+        videoWidth = videoHeight * ratio;
+    }
+
+    qCDebug(VideoManagerLog) << "Video resolution width: " << videoWidth;
+    qCDebug(VideoManagerLog) << "Video resolution height: " << videoHeight;
+
+    if (videoWidth != 0.0 && videoHeight != 0.0) {
+        auto borderWidthLeft = videoWidth <= maxX ? (maxX - videoWidth) / 2.0 : 0;
+        auto borderWidthRight = videoWidth <= maxX ? maxX - borderWidthLeft: maxX;
+        auto borderHeightTop = videoHeight <= maxY ? (maxY - videoHeight) / 2.0: 0;
+        auto borderHeightBottom = videoHeight <= maxY ? maxY - borderHeightTop: maxY;
+
+        if (xCenter < borderWidthLeft || xCenter > borderWidthRight || yCenter < borderHeightTop || yCenter > borderHeightBottom) {
+            qgcApp()->showAppMessage(tr("Target ROI is not in Video Area: xCenter=%1 yCenter=%2 mode=%3").arg(xCenter).arg(yCenter).arg(mode));
+            qCDebug(VideoManagerLog) << tr("Target ROI is not in Video Area: xCenter=%1 yCenter=%2 mode=%3").arg(xCenter).arg(yCenter).arg(mode);
+            return;
+        } else {
+            // move coordinates inside of Video content block
+            xCenter = xCenter - borderWidthLeft;
+            yCenter = yCenter - borderHeightTop;
+        }
+    }
+
+    _sendTargetModeViaMavlink(xCenter, yCenter, mode, videoWidth, videoHeight);
+}
+
+void
+VideoManager::_sendTargetModeViaMavlink(double xCenter, double yCenter, int mode, double maxX, double maxY)
+{
+    if (!_activeVehicle) {
+        qCWarning(VideoManagerLog) << "Active Vehicle is not defined";
+        qgcApp()->showAppMessage(tr("Active Vehicle is not defined"));
+        return;
+    }
+
+    _activeVehicle->sendCommand(
+        MAV_COMP_ID_ONBOARD_COMPUTER,  // Target component (Companion Computer)
+        MAV_CMD_USER_1,                // Command id
+        true,
+        static_cast<int>(LMTargetAction::LM_TARGET_LOCK_MODE),
+        xCenter,
+        yCenter,
+        mode,
+        maxX,
+        maxY);
+    qCDebug(VideoManagerLog) << "Sent Target Mode message via MavLink";
+}
+
+void
 VideoManager::startRecording(const QString& videoFile)
 {
     if (qgcApp()->runningUnitTests()) {
