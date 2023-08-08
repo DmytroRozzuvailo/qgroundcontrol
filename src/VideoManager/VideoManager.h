@@ -34,6 +34,7 @@ enum class LMTargetAction {
     LM_TARGET_LOCK,
     LM_TARGET_FOLLOW,
     LM_TARGET_CANCEL,
+    LM_TARGET_LOCK_MODE,
 };
 
 class VideoManager : public QGCTool
@@ -118,6 +119,7 @@ public:
 
 
     Q_INVOKABLE void sendTarget     (double x, double y, double width, double height, double maxX, double maxY);
+    Q_INVOKABLE void sendTargetMode (double xCenter, double yCenter, int mode, double maxX, double maxY);
     Q_INVOKABLE void followTarget   ();
     Q_INVOKABLE void cancelFollow   ();
 
@@ -173,6 +175,7 @@ protected:
     void _sendTargetViaMavlink      (double x, double y, double width, double height, double maxX, double maxY);
     void _sendFollowTargetViaMavlink();
     void _sendFollowCancelViaMavlink();
+    void _sendTargetModeViaMavlink  (double xCenter, double yCenter, int mode, double maxX, double maxY);
 
 protected:
     QString                 _videoFile;
