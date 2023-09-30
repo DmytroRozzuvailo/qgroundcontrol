@@ -102,6 +102,7 @@ Item {
         property real areaSize: areaMode * sizeOfAreaStep;
         property bool isPressed: false;
         property bool isFollowed: false;
+        property real attackMode: 0;
 
         onPressed: (mouse) => {
             isPressed = true;
@@ -263,8 +264,8 @@ Item {
                 bottomMargin: 24
             }
             onClicked: {
-                console.log('Follow Target');
-                QGroundControl.videoManager.followTarget();
+                console.log('Follow Target with attack mode = ' + flyViewVideoMouseArea.attackMode);
+                QGroundControl.videoManager.followTarget(flyViewVideoMouseArea.attackMode);
                 flyViewVideoMouseArea.isFollowed = true;
 
                 if (highlightItem != null) {
@@ -321,6 +322,55 @@ Item {
                 bottomMargin: 24
             }
             text: qsTr("Select Area Mode:")
+        }
+        QGCComboBox {
+            id: comboAttackAreaSize
+            visible: pipState.state === pipState.fullState
+            // enabled: flyViewVideoMouseArea.isFollowed === true
+            width:          _buttonWidth
+            anchors{
+                bottom: comboAreaSize.top
+                right: parent.right
+                rightMargin: 16
+                bottomMargin: 24
+            }
+            model: [qsTr("Auto"), qsTr("Fixed"), qsTr("Target"), qsTr("Current")]
+
+            onActivated: {
+                // Hard coded values from qserialport.h
+                switch (index) {
+                case 0:
+                    // auto
+                    flyViewVideoMouseArea.attackMode = 0;
+                    break
+                case 1:
+                    // fixed
+                    flyViewVideoMouseArea.attackMode = 1;
+                    break
+                case 2:
+                    // target
+                    flyViewVideoMouseArea.attackMode = 2;
+                    break
+                case 3:
+                    // current
+                    flyViewVideoMouseArea.attackMode = 3;
+                    break
+                }
+            }
+
+            Component.onCompleted: {
+                currentIndex = flyViewVideoMouseArea.attackMode;
+            }
+        }
+        QGCLabel {
+            width: _buttonWidth
+            anchors{
+                bottom: comboAreaSize.top
+                right: comboAttackAreaSize.left
+                rightMargin: 16
+                bottomMargin: 24
+            }
+            text: qsTr("Select Attack Mode:")
         }
     }
 
