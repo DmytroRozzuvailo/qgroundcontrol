@@ -418,18 +418,18 @@ VideoManager::_sendTargetViaMavlink(double x, double y, double width, double hei
 }
 
 void
-VideoManager::followTarget()
+VideoManager::followTarget(int attackMode)
 {
     if (qgcApp()->runningUnitTests()) {
         return;
     }
 
     // qgcApp()->showAppMessage(tr("Follow Target"));
-    _sendFollowTargetViaMavlink();
+    _sendFollowTargetViaMavlink(attackMode);
 }
 
 void
-VideoManager::_sendFollowTargetViaMavlink()
+VideoManager::_sendFollowTargetViaMavlink(int attackMode)
 {
     if (!_activeVehicle) {
         qCWarning(VideoManagerLog) << "Active Vehicle is not defined";
@@ -441,8 +441,9 @@ VideoManager::_sendFollowTargetViaMavlink()
         MAV_COMP_ID_ONBOARD_COMPUTER,  // Target component (Companion Computer)
         MAV_CMD_USER_1,                // Command id
         true,
-        static_cast<int>(LMTargetAction::LM_TARGET_FOLLOW));                           //
-    qCDebug(VideoManagerLog) << "Sent Follow Target message via MavLink";
+        static_cast<int>(LMTargetAction::LM_TARGET_FOLLOW),
+        attackMode);
+    qCDebug(VideoManagerLog) << "Sent Follow Target message via MavLink with attack mode: " << attackMode;
 }
 
 void

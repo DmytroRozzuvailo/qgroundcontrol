@@ -120,7 +120,7 @@ public:
 
     Q_INVOKABLE void sendTarget     (double x, double y, double width, double height, double maxX, double maxY);
     Q_INVOKABLE void sendTargetMode (double xCenter, double yCenter, int mode, double maxX, double maxY);
-    Q_INVOKABLE void followTarget   ();
+    Q_INVOKABLE void followTarget   (int attackMode);
     Q_INVOKABLE void cancelFollow   ();
 
     Q_INVOKABLE void startVideo     ();
@@ -173,7 +173,7 @@ protected:
     void _startReceiver             (unsigned id);
     void _stopReceiver              (unsigned id);
     void _sendTargetViaMavlink      (double x, double y, double width, double height, double maxX, double maxY);
-    void _sendFollowTargetViaMavlink();
+    void _sendFollowTargetViaMavlink(int attackMode);
     void _sendFollowCancelViaMavlink();
     void _sendTargetModeViaMavlink  (double xCenter, double yCenter, int mode, double maxX, double maxY);
 
