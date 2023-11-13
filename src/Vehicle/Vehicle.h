@@ -746,6 +746,9 @@ public:
 
     /// Same as sendMavCommand but available from Qml.
     Q_INVOKABLE void sendCommand(int compId, int command, bool showError, double param1 = 0.0, double param2 = 0.0, double param3 = 0.0, double param4 = 0.0, double param5 = 0.0, double param6 = 0.0, double param7 = 0.0);
+    
+    /// Do no wait ACCEPT on this command - only one direction messages
+    void sendCommandWithoutAck(int compId, int command, bool showError, double param1 = 0.0, double param2 = 0.0, double param3 = 0.0, double param4 = 0.0, double param5 = 0.0, double param6 = 0.0, double param7 = 0.0);
 
     typedef enum {
         MavCmdResultCommandResultOnly,          ///< commandResult specifies full success/fail info
@@ -1326,8 +1329,8 @@ private:
     static const int                _mavCommandAckTimeoutMSecs              = 3000;
     static const int                _mavCommandAckTimeoutMSecsHighLatency   = 120000;
 
-    void _sendMavCommandWorker  (bool commandInt, bool showError, MavCmdResultHandler resultHandler, void* resultHandlerData, int compId, MAV_CMD command, MAV_FRAME frame, float param1, float param2, float param3, float param4, double param5, double param6, float param7);
-    void _sendMavCommandFromList(int index);
+    void _sendMavCommandWorker  (bool commandInt, bool showError, MavCmdResultHandler resultHandler, void* resultHandlerData, int compId, MAV_CMD command, MAV_FRAME frame, float param1, float param2, float param3, float param4, double param5, double param6, float param7, bool withoutAck=false);
+    void _sendMavCommandFromList(int index, bool withoutAck=false);
     int  _findMavCommandListEntryIndex(int targetCompId, MAV_CMD command);
     bool _sendMavCommandShouldRetry(MAV_CMD command);
     bool _commandCanBeDuplicated(MAV_CMD command);

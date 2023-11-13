@@ -2948,6 +2948,19 @@ void Vehicle::sendCommand(int compId, int command, bool showError, double param1
                 static_cast<float>(param7));
 }
 
+void Vehicle::sendCommandWithoutAck(int compId, int command, bool showError, double param1, double param2, double param3, double param4, double param5, double param6, double param7)
+{
+    _sendMavCommandWorker(false,            // commandInt
+                          showError,
+                          nullptr,          // resultHandler
+                          nullptr,          // resultHandlerData
+                          compId,
+                          static_cast<MAV_CMD>(command),
+                          MAV_FRAME_GLOBAL,
+                          param1, param2, param3, param4, param5, param6, param7,
+                          true);
+}
+
 void Vehicle::sendMavCommandWithHandler(MavCmdResultHandler resultHandler, void *resultHandlerData, int compId, MAV_CMD command, float param1, float param2, float param3, float param4, float param5, float param6, float param7)
 {
     _sendMavCommandWorker(false,                // commandInt
@@ -3036,7 +3049,7 @@ bool Vehicle::_commandCanBeDuplicated(MAV_CMD command)
     }
 }
 
-void Vehicle::_sendMavCommandWorker(bool commandInt, bool showError, MavCmdResultHandler resultHandler, void* resultHandlerData, int targetCompId, MAV_CMD command, MAV_FRAME frame, float param1, float param2, float param3, float param4, double param5, double param6, float param7)
+void Vehicle::_sendMavCommandWorker(bool commandInt, bool showError, MavCmdResultHandler resultHandler, void* resultHandlerData, int targetCompId, MAV_CMD command, MAV_FRAME frame, float param1, float param2, float param3, float param4, double param5, double param6, float param7, bool withoutAck)
 {
     if ((targetCompId == MAV_COMP_ID_ALL) || (isMavCommandPending(targetCompId, command) && !_commandCanBeDuplicated(command))) {
         bool    compIdAll       = targetCompId == MAV_COMP_ID_ALL;
@@ -3086,10 +3099,10 @@ void Vehicle::_sendMavCommandWorker(bool commandInt, bool showError, MavCmdResul
     entry.elapsedTimer.start();
 
     _mavCommandList.append(entry);
-    _sendMavCommandFromList(_mavCommandList.count() - 1);
+    _sendMavCommandFromList(_mavCommandList.count() - 1, withoutAck);
 }
 
-void Vehicle::_sendMavCommandFromList(int index)
+void Vehicle::_sendMavCommandFromList(int index, bool withoutAck)
 {
     MavCommandListEntry_t commandEntry = _mavCommandList[index];
 
@@ -3165,6 +3178,11 @@ void Vehicle::_sendMavCommandFromList(int index)
                                              sharedLink->mavlinkChannel(),
                                              &msg,
                                              &cmd);
+    }
+
+    if (withoutAck) {
+        qCDebug(VehicleLog) << "_sendMavCommandFromList: remove message from list for waiting ACK!";
+        _mavCommandList.removeAt(index);
     }
 
     sendMessageOnLinkThreadSafe(sharedLink.get(), msg);

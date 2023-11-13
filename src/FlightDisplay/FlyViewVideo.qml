@@ -103,6 +103,7 @@ Item {
         property bool isPressed: false;
         property bool isFollowed: false;
         property real attackMode: 0;
+        property real communicationMode: 0;
 
         onPressed: (mouse) => {
             isPressed = true;
@@ -195,7 +196,7 @@ Item {
                 console.log('center x = ' + xMouse);
                 console.log('center y = ' + yMouse);
                 console.log('mode = ' + areaMode);
-                QGroundControl.videoManager.sendTargetMode(xMouse, yMouse, areaMode, parent.width, parent.height);
+                QGroundControl.videoManager.sendTargetMode(flyViewVideoMouseArea.communicationMode, xMouse, yMouse, areaMode, parent.width, parent.height);
             } else {
                 if (highlightItem.width == 0 || highlightItem.height == 0) {
                     return;
@@ -207,7 +208,7 @@ Item {
                 console.log('height = ' + highlightItem.height);
                 console.log('maxWidth = ' + parent.width);
                 console.log('maxHeight = ' + parent.height);
-                QGroundControl.videoManager.sendTarget(highlightItem.x, highlightItem.y, highlightItem.width, highlightItem.height, parent.width, parent.height);
+                QGroundControl.videoManager.sendTarget(flyViewVideoMouseArea.communicationMode, highlightItem.x, highlightItem.y, highlightItem.width, highlightItem.height, parent.width, parent.height);
 
             }
         }
@@ -238,7 +239,7 @@ Item {
             }
             onClicked: {
                 console.log('Cancel Follow');
-                QGroundControl.videoManager.cancelFollow();
+                QGroundControl.videoManager.cancelFollow(flyViewVideoMouseArea.communicationMode);
                 flyViewVideoMouseArea.isFollowed = false;
 
                 if (highlightItem != null) {
@@ -265,7 +266,7 @@ Item {
             }
             onClicked: {
                 console.log('Follow Target with attack mode = ' + flyViewVideoMouseArea.attackMode);
-                QGroundControl.videoManager.followTarget(flyViewVideoMouseArea.attackMode);
+                QGroundControl.videoManager.followTarget(flyViewVideoMouseArea.communicationMode, flyViewVideoMouseArea.attackMode);
                 flyViewVideoMouseArea.isFollowed = true;
 
                 if (highlightItem != null) {
@@ -288,7 +289,6 @@ Item {
             model: [qsTr("Manual"), qsTr("Small"), qsTr("Middle"), qsTr("Big")]
 
             onActivated: {
-                // Hard coded values from qserialport.h
                 switch (index) {
                 case 0:
                     // manual
@@ -337,7 +337,6 @@ Item {
             model: [qsTr("Auto"), qsTr("Fixed"), qsTr("Target"), qsTr("Current")]
 
             onActivated: {
-                // Hard coded values from qserialport.h
                 switch (index) {
                 case 0:
                     // auto
@@ -371,6 +370,46 @@ Item {
                 bottomMargin: 24
             }
             text: qsTr("Select Attack Mode:")
+        }
+        QGCComboBox {
+            id: comboConnectionAreaSize
+            visible: pipState.state === pipState.fullState
+            // enabled: flyViewVideoMouseArea.isFollowed === true
+            width:          _buttonWidth
+            anchors{
+                bottom: comboAttackAreaSize.top
+                right: parent.right
+                rightMargin: 16
+                bottomMargin: 24
+            }
+            model: [qsTr("Enabled"), qsTr("Disabled")]
+
+            onActivated: {
+                switch (index) {
+                case 0:
+                    // auto
+                    flyViewVideoMouseArea.communicationMode = 0;
+                    break
+                case 1:
+                    // fixed
+                    flyViewVideoMouseArea.communicationMode = 1;
+                    break
+                }
+            }
+
+            Component.onCompleted: {
+                currentIndex = flyViewVideoMouseArea.communicationMode;
+            }
+        }
+        QGCLabel {
+            width: _buttonWidth
+            anchors{
+                bottom: comboAttackAreaSize.top
+                right: comboConnectionAreaSize.left
+                rightMargin: 16
+                bottomMargin: 24
+            }
+            text: qsTr("Select Confirmation:")
         }
     }
 
