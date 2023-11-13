@@ -118,10 +118,10 @@ public:
     virtual void        setToolbox          (QGCToolbox *toolbox);
 
 
-    Q_INVOKABLE void sendTarget     (double x, double y, double width, double height, double maxX, double maxY);
-    Q_INVOKABLE void sendTargetMode (double xCenter, double yCenter, int mode, double maxX, double maxY);
-    Q_INVOKABLE void followTarget   (int attackMode);
-    Q_INVOKABLE void cancelFollow   ();
+    Q_INVOKABLE void sendTarget     (int communicationMode, double x, double y, double width, double height, double maxX, double maxY);
+    Q_INVOKABLE void sendTargetMode (int communicationMode, double xCenter, double yCenter, int mode, double maxX, double maxY);
+    Q_INVOKABLE void followTarget   (int communicationMode, int attackMode);
+    Q_INVOKABLE void cancelFollow   (int communicationMode);
 
     Q_INVOKABLE void startVideo     ();
     Q_INVOKABLE void stopVideo      ();
@@ -172,10 +172,10 @@ protected:
     void _restartVideo              (unsigned id);
     void _startReceiver             (unsigned id);
     void _stopReceiver              (unsigned id);
-    void _sendTargetViaMavlink      (double x, double y, double width, double height, double maxX, double maxY);
-    void _sendFollowTargetViaMavlink(int attackMode);
-    void _sendFollowCancelViaMavlink();
-    void _sendTargetModeViaMavlink  (double xCenter, double yCenter, int mode, double maxX, double maxY);
+    void _sendTargetViaMavlink      (int communicationMode, double x, double y, double width, double height, double maxX, double maxY);
+    void _sendFollowTargetViaMavlink(int communicationMode, int attackMode);
+    void _sendFollowCancelViaMavlink(int communicationMode);
+    void _sendTargetModeViaMavlink  (int communicationMode, double xCenter, double yCenter, int mode, double maxX, double maxY);
 
 protected:
     QString                 _videoFile;
